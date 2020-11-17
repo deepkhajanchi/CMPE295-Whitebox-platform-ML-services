@@ -123,9 +123,9 @@ def save_layers_to_db(connection, model, savedModel, savedConfiguration, startLa
             );
         """, {
             "id": "m" + str(savedModel.id) + "c" + str(savedConfiguration.id) + "lI",
-            "name": model.layers[0].name + "_INPUT",
+            "name": model.layers[startLayerIdx].name + "_INPUT",
             "type": "INPUT",
-            "data": """{ "nodeCount": """ + str(model.layers[0].input_shape[1]) + """}""",
+            "data": """{ "nodeCount": """ + str(model.layers[startLayerIdx].input_shape[1]) + """}""",
             "createdAt": datetime.datetime.now().isoformat(),
             "updatedAt": datetime.datetime.now().isoformat(),
             "configurationId": savedConfiguration.id
@@ -316,7 +316,7 @@ def import_model(profileId, loaded_model, filename, filePath, options = {}):
     connection.close()
 
 ###### Testing ######
-def create_test_to_db(connection, model, savedModel, savedConfiguration, profileId, testName):
+def create_test_to_db(connection, model, savedModel, savedConfiguration, profileId, testName, image_path):
     try:
         cur = connection.cursor()
        
@@ -334,7 +334,7 @@ def create_test_to_db(connection, model, savedModel, savedConfiguration, profile
         """, {
             "name": testName,
             "status": "RUNNING",
-            "input": "https://secure.img1-ag.wfcdn.com/im/08892826/resize-h800%5Ecompr-r85/4307/43073707/Playing+Tabby+Kitten+Statue.jpg",
+            "input": image_path,
             "timestamp": datetime.datetime.now().isoformat(),
             "createdAt": datetime.datetime.now().isoformat(),
             "updatedAt": datetime.datetime.now().isoformat(),
@@ -463,7 +463,7 @@ def load_images(path, height, width, batch_size):
     image_generator = image_data_generator.flow_from_directory(
         batch_size=batch_size,
         directory=path,
-        shuffle=True,
+        shuffle=False,
         target_size=(height, width),
         class_mode='categorical')
 
@@ -473,7 +473,7 @@ def test_images(model, profileId, test_name, image_generator, savedModel, savedC
     connection = init_db_connection()
 
     # Create a test entry
-    createdTest = create_test_to_db(connection, model, savedModel, savedConfiguration, profileId, test_name)
+    createdTest = create_test_to_db(connection, model, savedModel, savedConfiguration, profileId, test_name, options['image_path'])
 
     # retrieve data 
     data = image_generator.next()

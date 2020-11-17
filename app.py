@@ -48,7 +48,14 @@ def run_test():
     data_dir = os.path.join(PATH, 'test')
     image_generator = load_images(data_dir, 100, 100, 1)
 
-    test_images(model, profileId, testName, image_generator,{"id": modelId}, {"id": configurationId}, {"startLayerIdx": 9})
+
+    label = os.listdir(data_dir)[0]
+    
+    image_dir_path = os.path.join(data_dir, label)
+    # image_path = os.path.join(image_dir_path, os.listdir(image_dir_path)[0])
+    image_path = "/imageData/test/" + label + "/" + os.listdir(image_dir_path)[0]
+
+    test_images(model, profileId, testName, image_generator,{"id": modelId}, {"id": configurationId}, {"startLayerIdx": 9, "image_path": image_path})
     return "ok"
 
 
