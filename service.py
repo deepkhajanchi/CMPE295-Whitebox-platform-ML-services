@@ -17,12 +17,20 @@ from string import Template
 BATCH_SIZE = 1000
 
 def init_db_connection():
-    connection = pgdb.connect(
-        host="localhost",
-        database="cmpe295b_v4",
-        user="postgres",
-        password="root",
-    )
+    if os.environ.get('DB_HOST') != None and os.environ.get('DB_DATABASE') != None and os.environ.get('DB_USERNAME') != None and os.environ.get('DB_PASSWORD') != None:
+        connection = pgdb.connect(
+            host=os.environ['DB_HOST'],
+            database=os.environ['DB_DATABASE'],
+            user=os.environ['DB_USERNAME'],
+            password=os.environ['DB_PASSWORD'],
+        )
+    else:
+        connection = pgdb.connect(
+            host="localhost",
+            database="cmpe295b_v5",
+            user="postgres",
+            password="root",
+        )
     connection.autocommit = True
     return connection
 
@@ -469,14 +477,21 @@ def load_images(path, height, width, batch_size):
 
     return image_generator
 
-def test_images(model, profileId, test_name, image_generator, savedModel, savedConfiguration, options = {}):
+def get_highest_idx(layer_output):
+    # last_layer_output = layer_outputs[-1][0][0]
+    highest = 0
+    highest_idx = 0
+    for idx in range(0, len(layer_output)):
+        if highest < layer_output[idx]:
+            highest = layer_output[idx]
+            highest_idx = idx
+    return highest_idx
+
+def test_images(model, profileId, test_name, savedModel, savedConfiguration, data, expected_label, options = {}):
     connection = init_db_connection()
 
     # Create a test entry
     createdTest = create_test_to_db(connection, model, savedModel, savedConfiguration, profileId, test_name, options['image_path'])
-
-    # retrieve data 
-    data = image_generator.next()
 
     # Get the immediate output at the previous layer of the current layer
     inter_output_model = keras.Model(model.input, model.get_layer(index = options['startLayerIdx'] - 1).output )
@@ -492,6 +507,14 @@ def get_model(modelId):
     connection = init_db_connection()
     cur = connection.cursor()
     cur.execute('select * from models where id = ' + str(modelId) + ';')
+    savedModel = cur.fetchone()
+    connection.close()
+    return savedModel
+
+def get_dataset(datasetId):
+    connection = init_db_connection()
+    cur = connection.cursor()
+    cur.execute('select * from datasets where id = ' + str(datasetId) + ';')
     savedModel = cur.fetchone()
     connection.close()
     return savedModel
